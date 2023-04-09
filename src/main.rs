@@ -22,27 +22,26 @@ fn main() {
 fn decode_instruction(instr: [u8; 2]) -> String {
     let upper = instr[0];
 
-    let op_mask = 63u8 << 2;
+    let op_mask = 0b11111100;
     let op_value = (upper & op_mask) >> 2;
 
     let op_name = get_op_name(op_value);
 
-    let d_mask = 1u8 << 1;
+    let d_mask = 0b00000010;
     let d_bit = (upper & d_mask) >> 1;
 
-    let w_mask = 1u8;
+    let w_mask = 0b00000001;
     let w_bit = upper & w_mask;
 
     let lower = instr[1];
-
-    // let mod_mask = 3u8 << 6;
+    // let mod_mask = 0b11000000;
     // let mod_value = (lower & mod_mask) >> 6;
 
-    let reg_mask = 7u8 << 3;
+    let reg_mask = 0b00111000;
     let reg_value = (lower & reg_mask) >> 3;
     let reg_reg_value = get_register_name(reg_value, w_bit);
 
-    let rm_mask = 7u8;
+    let rm_mask = 0b00000111;
     let rm_value = lower & rm_mask;
     let rm_reg_value = get_register_name(rm_value, w_bit);
 
@@ -59,30 +58,30 @@ fn decode_instruction(instr: [u8; 2]) -> String {
 
 fn get_op_name(op_value: u8) -> &'static str {
     match op_value {
-        34 => "mov",
+        0b100010 => "mov",
         _ => "",
     }
 }
 
 fn get_register_name(reg_or_rm_value: u8, w_value: u8) -> &'static str {
     match (reg_or_rm_value, w_value) {
-        (0, 0) => "al",
-        (1, 0) => "cl",
-        (2, 0) => "dl",
-        (3, 0) => "bl",
-        (4, 0) => "ah",
-        (5, 0) => "ch",
-        (6, 0) => "dh",
-        (7, 0) => "bh",
+        (0b000, 0) => "al",
+        (0b001, 0) => "cl",
+        (0b010, 0) => "dl",
+        (0b011, 0) => "bl",
+        (0b100, 0) => "ah",
+        (0b101, 0) => "ch",
+        (0b110, 0) => "dh",
+        (0b111, 0) => "bh",
 
-        (0, 1) => "ax",
-        (1, 1) => "cx",
-        (2, 1) => "dx",
-        (3, 1) => "bx",
-        (4, 1) => "sp",
-        (5, 1) => "bp",
-        (6, 1) => "si",
-        (7, 1) => "di",
+        (0b000, 1) => "ax",
+        (0b001, 1) => "cx",
+        (0b010, 1) => "dx",
+        (0b011, 1) => "bx",
+        (0b100, 1) => "sp",
+        (0b101, 1) => "bp",
+        (0b110, 1) => "si",
+        (0b111, 1) => "di",
 
         _ => "",
     }
