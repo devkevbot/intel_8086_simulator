@@ -1,4 +1,5 @@
-use std::env;
+use std::io::Write;
+use std::{env, fs::File};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -6,25 +7,20 @@ fn main() {
         panic!("Expectd input file name!")
     }
     let in_file_name = &args[1];
-
     let bytes = std::fs::read(in_file_name).unwrap();
-    decode(bytes);
 
-    // let operations: Vec<_> = std::fs::read(in_file_name)
-    //     .unwrap()
-    //     .chunks(2)
-    //     .map(|inst_bytes| decode_instruction([inst_bytes[0], inst_bytes[1]]))
-    //     .collect();
+    let decoded_instructions = decode(bytes);
 
-    // let out_file_name = format!("{}.out", in_file_name);
-    // let mut f = File::create(out_file_name).expect("Should be able to create file");
-    // for operation in &operations {
-    //     writeln!(f, "{}", operation).unwrap();
-    // }
+    let out_file_name = format!("{}.out", in_file_name);
+    let mut out = File::create(out_file_name).expect("Should be able to create file");
+    for operation in &decoded_instructions {
+        writeln!(out, "{}", operation).unwrap();
+    }
 }
 
-fn decode(buf: Vec<u8>) {
-    let mut iter = buf.into_iter();
+fn decode(input_bytes: Vec<u8>) -> Vec<String> {
+    let mut iter = input_bytes.into_iter();
+    let mut out: Vec<String> = vec![];
 
     while let Some(byte) = iter.next() {
         match byte {
@@ -42,17 +38,17 @@ fn decode(buf: Vec<u8>) {
                 // Register-to-register move
                 if mod_val == 0b11 {
                     if d_val == 0b1 {
-                        println!(
+                        out.push(format!(
                             "mov {}, {}",
                             get_register_name(reg_val, w_val),
                             get_register_name(rm_val, w_val)
-                        )
+                        ))
                     } else {
-                        println!(
+                        out.push(format!(
                             "mov {}, {}",
                             get_register_name(rm_val, w_val),
                             get_register_name(reg_val, w_val)
-                        )
+                        ));
                     }
                 }
                 // Effective address calculation
@@ -79,9 +75,17 @@ fn decode(buf: Vec<u8>) {
                     };
 
                     if d_val == 0b1 {
-                        println!("mov {}, {}", get_register_name(reg_val, w_val), address);
+                        out.push(format!(
+                            "mov {}, {}",
+                            get_register_name(reg_val, w_val),
+                            address
+                        ));
                     } else {
-                        println!("mov {}, {}", address, get_register_name(reg_val, w_val));
+                        out.push(format!(
+                            "mov {}, {}",
+                            address,
+                            get_register_name(reg_val, w_val)
+                        ));
                     }
                 }
             }
@@ -100,11 +104,17 @@ fn decode(buf: Vec<u8>) {
                     format!("{}", immediate)
                 };
 
-                println!("mov {}, {}", get_register_name(reg_val, w_val), immediate)
+                out.push(format!(
+                    "mov {}, {}",
+                    get_register_name(reg_val, w_val),
+                    immediate
+                ));
             }
             _ => {}
         }
     }
+
+    out
 }
 
 fn get_rm_address_equation(rm_val: u8) -> &'static str {
@@ -150,7 +160,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn mov_works() {
+    fn mov_simple_works() {
         let expected = "mov cx, bx
 mov ch, ah
 mov dx, bx
@@ -163,42 +173,38 @@ mov bx, si
 mov sp, di
 mov bp, ax";
 
-        // let operations: String = std::fs::read("listing_0038_many_register_mov")
-        //     .unwrap()
-        //     .chunks(2)
-        //     .map(|inst_bytes| decode_instruction([inst_bytes[0], inst_bytes[1]]))
-        //     .collect::<Vec<_>>()
-        //     .join("\n");
+        let bytes = std::fs::read("listing_0038_many_register_mov").unwrap();
 
-        // assert_eq!(operations, expected);
+        let decoded_instructions = decode(bytes);
+
+        let operations = decoded_instructions.join("\n");
+        assert_eq!(operations, expected);
     }
 
     #[test]
-    fn move_works_2() {
+    fn move_complex_works() {
         let expected = "mov si, bx
 mov dh, al
 mov cl, 12
-mov ch, -12
+mov ch, 244
 mov cx, 12
-mov cx, -12
+mov cx, 65524
 mov dx, 3948
-mov dx, -3948
+mov dx, 61588
 mov al, [bx + si]
 mov bx, [bp + di]
-mov dx, [bp]
+mov dx, [bp + 0]
 mov ah, [bx + si + 4]
 mov al, [bx + si + 4999]
 mov [bx + di], cx
 mov [bp + si], cl
-mov [bp], ch";
+mov [bp + 0], ch";
 
-        // let operations: String = std::fs::read("listing_0039_more_movs")
-        //     .unwrap()
-        //     .chunks(2)
-        //     .map(|inst_bytes| decode_instruction([inst_bytes[0], inst_bytes[1]]))
-        //     .collect::<Vec<_>>()
-        //     .join("\n");
+        let bytes = std::fs::read("listing_0039_more_movs").unwrap();
 
-        // assert_eq!(operations, expected);
+        let decoded_instructions = decode(bytes);
+
+        let operations = decoded_instructions.join("\n");
+        assert_eq!(operations, expected);
     }
 }
