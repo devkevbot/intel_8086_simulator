@@ -86,3 +86,32 @@ fn get_register_name(reg_or_rm_value: u8, w_value: u8) -> &'static str {
         _ => "",
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn mov_works() {
+        let expected = "mov cx, bx
+mov ch, ah
+mov dx, bx
+mov si, bx
+mov bx, di
+mov al, cl
+mov ch, ch
+mov bx, ax
+mov bx, si
+mov sp, di
+mov bp, ax";
+
+        let operations: String = std::fs::read("listing_0038_many_register_mov")
+            .unwrap()
+            .chunks(2)
+            .map(|inst_bytes| decode_instruction([inst_bytes[0], inst_bytes[1]]))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert_eq!(operations, expected);
+    }
+}
